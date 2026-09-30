@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Five Days</title>
+<style>
+/* Layout: one narrow column (max 460px). Play = a phone chat feed under a Mon-Fri week strip; audit = a ruled "report" page with stamped chips. */
+:root{
+  --bg:#e9edf2; --panel:#ffffff; --ink:#18202c; --muted:#5b6474; --line:#d5dbe4;
+  --bubble:#f2f4f8; --paper:#fcfcfa; --rule:#e3e6ea;
+  --accent:#2f45d0; --accent-ink:#ffffff; --accent-soft:#e7eaff;
+  --good:#2c7a4d; --warn:#a8680f; --slate:#556479;
+  --t1:#2f45d0; --t2:#b3471d; --t3:#2c7a4d; --t4:#7a3fb3; --t5:#9a6b00;
+  --narr:#fff7e6; --narr-line:#ecd7a6;
+  --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1118; --panel:#171b24; --ink:#e8ebf1; --muted:#9aa2b2; --line:#2a303c;
+  --bubble:#1f2430; --paper:#141820; --rule:#242a35;
+  --accent:#8e9cff; --accent-ink:#0e1118; --accent-soft:#232a4a;
+  --good:#63c48d; --warn:#e2a54c; --slate:#9aa8bd;
+  --t1:#8e9cff; --t2:#f08a60; --t3:#63c48d; --t4:#c29af0; --t5:#e2c05c;
+  --narr:#2a2517; --narr-line:#4a4128; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1118; --panel:#171b24; --ink:#e8ebf1; --muted:#9aa2b2; --line:#2a303c;
+  --bubble:#1f2430; --paper:#141820; --rule:#242a35;
+  --accent:#8e9cff; --accent-ink:#0e1118; --accent-soft:#232a4a;
+  --good:#63c48d; --warn:#e2a54c; --slate:#9aa8bd;
+  --t1:#8e9cff; --t2:#f08a60; --t3:#63c48d; --t4:#c29af0; --t5:#e2c05c;
+  --narr:#2a2517; --narr-line:#4a4128; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);margin:0;padding:0 16px}
+.shell{max-width:460px;margin:0 auto;padding-block:0 48px}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* week strip */
+.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:3;display:flex;align-items:center;gap:6px;padding-block:12px;background:var(--bg)}
+.pip{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 12px var(--mono);border:1.5px solid var(--line);color:var(--muted)}
+.pip.done{background:var(--line);color:var(--ink);border-color:var(--line)}
+.pip.now{border-color:var(--accent);color:var(--accent)}
+.strip-label{margin-left:8px;font:600 13px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* start */
+.start{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:32px 24px;display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.eyebrow{margin:0;font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.start-title{margin:0;font:600 clamp(40px,11vw,56px)/1 var(--display);letter-spacing:-.01em}
+.start-line{margin:0;font-size:18px;text-wrap:balance}
+.start-small{margin:0;color:var(--muted);font-size:15px}
+.btn{border:0;border-radius:12px;padding:14px 18px;min-height:48px;font-weight:600;cursor:pointer;align-self:flex-start}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.ghost{background:none;border:1.5px solid var(--line)}
+
+/* day */
+.day{display:flex;flex-direction:column;gap:14px;padding-top:4px}
+.daycard{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:4px 2px 8px;border-bottom:1px solid var(--line)}
+.day-title{margin:0;font:600 30px/1.1 var(--display)}
+.day-stamp{font:500 14px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.day-status{margin:0;width:100%;color:var(--muted);font-size:15px}
+.feed{display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:10px;align-items:flex-start;animation:rise .25s ease-out}
+@keyframes rise{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 12px var(--sans);color:var(--panel);background:var(--muted)}
+.av.t1{background:var(--t1)}.av.t2{background:var(--t2)}.av.t3{background:var(--t3)}.av.t4{background:var(--t4)}.av.t5{background:var(--t5)}
+.mbody{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.mmeta{display:flex;gap:8px;align-items:baseline;font-size:13px}
+.mname{font-weight:600}
+.mwhere{color:var(--muted)}
+.bubble{background:var(--panel);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:10px 13px;font-size:15.5px;overflow-wrap:anywhere}
+.ch-email .bubble{border-radius:10px;border-left:4px solid var(--slate)}
+.subj{font-weight:600;margin-bottom:4px}
+.fwd{font-style:italic;color:var(--muted);font-size:13px;margin-bottom:4px}
+.quote{border-left:3px solid var(--line);padding-left:10px}
+.voice{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.play{width:0;height:0;border-left:11px solid var(--ink);border-top:7px solid transparent;border-bottom:7px solid transparent}
+.wave{display:flex;align-items:center;gap:2px;flex:1}
+.wave i{display:block;width:3px;border-radius:2px;background:var(--muted)}
+.dur{font:12px var(--mono);color:var(--muted)}
+.transcript-label{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.transcript{font-style:italic}
+.vid{position:relative;height:120px;border-radius:10px;background:#1c222d;margin-bottom:8px;display:grid;place-items:center;overflow:hidden}
+.vid::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 14px,rgba(255,255,255,.04) 14px 28px)}
+.vplay{width:0;height:0;border-left:20px solid #ffffff;border-top:12px solid transparent;border-bottom:12px solid transparent;z-index:1}
+.vlabel{position:absolute;left:10px;bottom:8px;font:600 11px var(--mono);letter-spacing:.08em;color:#cfd5df;z-index:1}
+.cal{display:flex;gap:10px;align-items:center;margin-left:44px;padding:8px 12px;border-radius:10px;border:1px dashed var(--muted);font-size:15px}
+.cal-tag{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warn)}
+.typing{display:flex;gap:4px;margin-left:44px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;width:max-content}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.skip{align-self:center;background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}
+
+/* call */
+.call{display:flex;flex-direction:column;gap:12px;margin-top:6px;padding-top:14px;border-top:2px solid var(--ink)}
+.call-label{margin:0;font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.question{margin:0;font:600 21px/1.3 var(--display);text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:13px 15px;min-height:52px;cursor:pointer;font-size:15.5px;transition:border-color .15s,background .15s}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt.chosen{border-color:var(--ink);background:var(--bubble);cursor:default}
+.consequence{background:var(--narr);border:1px solid var(--narr-line);border-radius:12px;padding:14px 16px;animation:rise .3s ease-out}
+.consequence p{margin:0}
+
+/* audit report */
+.report{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:26px 20px 24px;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.report-title{margin:0;font:600 34px/1.1 var(--display);text-wrap:balance}
+.report-sum{margin:0;color:var(--muted);font-size:16px}
+.rows{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column}
+.row{padding:14px 0;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:6px;animation:rise .3s ease-out}
+.row-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row-day{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:84px}
+.row-bias{font:600 18px var(--display);flex:1;min-width:0}
+.chip{font:700 11px var(--mono);letter-spacing:.08em;padding:4px 8px;border:2px solid currentColor;border-radius:4px;transform:rotate(-2deg)}
+.c-checked{color:var(--good)}.c-shortcut{color:var(--warn)}.c-overcorrection{color:var(--slate)}
+.row-quote{margin:0;font-style:italic;color:var(--muted);font-size:14.5px}
+.row-why{margin:0;font-size:15.5px}
+.row-catch{margin:0;font-size:15px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.catch-label{font:700 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.twist-line{margin:4px 0 0;padding-top:14px;border-top:1px solid var(--rule);font-size:15px;color:var(--muted)}
+.result{margin-top:10px;background:var(--accent-soft);border:2px solid var(--accent);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.result:empty{display:none}
+.result-label{margin:0;font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.result-name{margin:0;font:600 clamp(32px,9vw,44px)/1.05 var(--display)}
+.result-line,.result-lead,.result-prompt{margin:0}
+.result-prompt{font-weight:600}
+.result-catch{margin:0;font-size:17px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.result-carry{margin:0;color:var(--muted);font-size:14.5px}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pickbtn{background:var(--panel);border:1.5px solid var(--accent);border-radius:999px;padding:10px 14px;min-height:44px;cursor:pointer;font-weight:600}
+.pickbtn:hover{background:var(--accent);color:var(--accent-ink)}
+.closing{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.closing p{margin:0;font:italic 17px var(--display)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="strip" id="strip" aria-label="School week"></div>
+  <main id="app"></main>
+</div>
+<script>
+/* Five Days: The Bias Audit. Scenario config for Grade 11 (IW-11, slide 27).
+   All scholar-facing copy lives here. The engine in app.js reads window.WEEK. */
+window.WEEK = {
+  meta: { id: "five-days-g11", title: "Five Days", role: "Grade 11 portfolio lead" },
+
+  cast: {
+    tumi:    { name: "Tumi",        initials: "T",  tone: 1, role: "Co-lead" },
+    karabo:  { name: "Karabo",      initials: "K",  tone: 2, role: "Committee" },
+    adams:   { name: "Mrs Adams",   initials: "MA", tone: 3, role: "Bursar" },
+    pillay:  { name: "Mr Pillay",   initials: "MP", tone: 4, role: "Grade 11 head" },
+    nkosi:   { name: "Mrs Nkosi",   initials: "MN", tone: 5, role: "Parent rep" },
+    daniels: { name: "Mr Daniels",  initials: "MD", tone: 3, role: "Caretaker" },
+    govender:{ name: "Ms Govender", initials: "MG", tone: 5, role: "History" },
+    calendar:{ name: "Calendar",    initials: "",   tone: 0, role: "" }
+  },
+
+  biases: {
+    anchoring:    { name: "Anchoring",         line: "The first number you hear drags every estimate towards it.",                 catch: "Where did this starting number come from?" },
+    availability: { name: "Availability",      line: "Loud, vivid examples make things feel more common than they are.",           catch: "Am I remembering this because it is common, or because it is loud?" },
+    confirmation: { name: "Confirmation bias", line: "Once you believe something, you notice what fits and skip what does not.",   catch: "What would I expect to see if I were wrong?" },
+    planning:     { name: "Planning fallacy",  line: "You plan for the best case, even when the last one ran late.",               catch: "How long did the last one actually take?" },
+    sunkcost:     { name: "Sunk cost",         line: "You keep going because of what you have spent, not what you will get.",       catch: "If I were starting today, would I choose this?" }
+  },
+
+  days: [
+    {
+      id: "mon", label: "Monday", short: "M", stamp: "07:42", status: "Tumi has already messaged.", bias: "anchoring",
+      feed: [
+        { from: "tumi",  channel: "chat",    text: "Morning co-lead! Mrs Adams needs our Grade 11 social budget by 2pm today." },
+        { from: "tumi",  channel: "forward", label: "Forwarded from last year's committee", text: "Grade 11 social 2025. Budget R12,000. Best night ever!!" },
+        { from: "karabo",channel: "chat",    text: "Just do R12k again. It worked last year, why reinvent it" },
+        { from: "adams", channel: "email",   subject: "Grade 11 social budget", text: "Please submit your budget by 14:00. 94 scholars have paid the R80 ticket, and the school will add R2,500." }
+      ],
+      question: "What do you send Mrs Adams by 2pm?",
+      options: [
+        { type: "shortcut",       text: "R12,000. It worked last year, so it is a safe place to start.",
+          consequence: "Mrs Adams replies within the hour: \"This is R1,980 more than you have. Please redo it.\" You spend second break cutting DJ hours from a R12,000 plan, and nobody is happy with what is left." },
+        { type: "checked",        text: "About R10,000, after adding up the ticket money and the school's R2,500.",
+          consequence: "You and Tumi add it up: 94 tickets at R80, plus R2,500, is R10,020. You build the budget line by line and send it at 13:40. Mrs Adams replies with one word: \"Perfect.\"" },
+        { type: "overcorrection", text: "R6,000. Better to spend far less than to risk going over.",
+          consequence: "Approved straight away. But the social has no photo booth and half the food, while about R4,000 sits unspent. Three people ask what their R80 paid for." }
+      ],
+      audit: {
+        shortcut: "Last year's R12,000 was the first number you saw, and your budget started there. It had nothing to do with this year's money.",
+        overcorrection: "You pushed as far from R12,000 as you could. Moving away from an anchor still uses it as the starting point.",
+        checked: "You set the first number aside and built the budget from what was actually coming in."
+      }
+    },
+    {
+      id: "tue", label: "Tuesday", short: "T", stamp: "10:05", status: "Your phone has not stopped buzzing.", bias: "availability",
+      feed: [
+        { from: "nkosi",  channel: "voice", duration: "0:38", text: "Hi, it's Thandi's mom. Have you seen the video? A school bus crashed on the highway this morning. I'm not comfortable with our kids on a bus on Saturday. Please cancel." },
+        { from: "karabo", channel: "video", text: "this is so scary" },
+        { from: "tumi",   channel: "chat",  text: "Three moms have sent me this already. Cancel??" },
+        { from: "pillay", channel: "email", subject: "Saturday outing", text: "Saturday's outing uses Safari Coaches. The school has used them for eight years. The bus in today's news belonged to a different company. Your call on how to answer the parents." }
+      ],
+      question: "The parents want an answer before lunch. What do you do?",
+      options: [
+        { type: "overcorrection", text: "Reply that one crash proves nothing, and the outing goes ahead as planned.",
+          consequence: "The outing goes ahead, but two parents pull their children out. Mrs Nkosi emails the principal to say the portfolio \"does not listen to parents\"." },
+        { type: "shortcut",       text: "Cancel the outing. Safety comes first, and everyone has seen the video.",
+          consequence: "The outing is cancelled and the R3,000 venue deposit is lost. Sixty scholars are disappointed. On Monday, Safari Coaches confirms eight years without an incident." },
+        { type: "checked",        text: "Ask Mr Pillay for the bus company's safety record, then share it with the parents.",
+          consequence: "Mr Pillay sends the record within the hour: eight years, no incidents. You share it with the parents, with the driver's details. Mrs Nkosi replies: \"Thank you, that helps.\" The outing goes ahead." }
+      ],
+      audit: {
+        shortcut: "One vivid video made a rare event feel likely. The eight-year safety record was in your inbox the whole time.",
+        overcorrection: "You were right that one crash is not a pattern, but you brushed the parents off instead of showing them the evidence.",
+        checked: "You asked for the real record instead of going with the loudest example."
+      }
+    },
+    {
+      id: "wed", label: "Wednesday", short: "W", stamp: "13:52", status: "Something has happened to the notice board.", bias: "confirmation",
+      feed: [
+        { from: "tumi",    channel: "chat", text: "Our notice board is TRASHED. Posters ripped, LOSERS written across it in marker." },
+        { from: "tumi",    channel: "chat", text: "Wasn't Sizwe hanging around there at break? The Grade 9 who gave you attitude at the tuck shop last week." },
+        { from: "karabo",  channel: "chat", text: "Sizwe 100%. He's always in trouble." },
+        { from: "daniels", channel: "chat", direct: true, text: "FYI, the art room notice board was ripped too. Both happened between 13:00 and 13:30, I was in the passage at 13:00 and they were fine." }
+      ],
+      question: "Mr Pillay wants a name for the incident report by the end of the day. What do you write?",
+      options: [
+        { type: "checked",        text: "Check the times first: when was Sizwe there, and when did the damage happen?",
+          consequence: "Sizwe was near the board at 10:30 break. The damage happened between 13:00 and 13:30, when the Grade 9s were writing a Maths test. You write \"unknown, still checking\" and ask the art teacher what she saw." },
+        { type: "overcorrection", text: "Leave it blank. You do not want to accuse anyone, so the report can say \"unknown\".",
+          consequence: "The report goes in blank. Nobody follows it up, and on Friday morning the board is ripped again." },
+        { type: "shortcut",       text: "Sizwe. He was near the board, and he already has a problem with you.",
+          consequence: "Sizwe is called to the office. He says nothing. By the afternoon, his friends are calling your portfolio \"the police\"." }
+      ],
+      audit: {
+        shortcut: "You already had a bad feeling about Sizwe, so being near the board looked like proof. Mr Daniels's timing ruled him out.",
+        overcorrection: "Refusing to name anyone felt fair, but you skipped the evidence that could have shown what happened.",
+        checked: "You looked for the fact that could prove the suspicion wrong, and it did."
+      }
+    },
+    {
+      id: "thu", label: "Thursday", short: "T", stamp: "11:20", status: "Assembly is tomorrow.", bias: "planning",
+      feed: [
+        { from: "pillay",   channel: "email",    subject: "Friday assembly", text: "You have five minutes at Friday assembly to promote the cupcake sale. Please send your slides by whatever time you commit to." },
+        { from: "tumi",     channel: "chat",     text: "How long will slides take? Remember Spring Day, we said one hour and it took four" },
+        { from: "calendar", channel: "calendar", text: "History essay due Friday, 08:00." }
+      ],
+      question: "When do you promise Mr Pillay the slides?",
+      options: [
+        { type: "shortcut",       text: "Tonight at 8pm. It is only five slides, so an hour is plenty.", setFlag: "thuShortcut",
+          consequence: "At 22:15 you are still fixing slide four, and the History essay is not started. The slides go to Mr Pillay at 23:40." },
+        { type: "checked",        text: "Start straight after school and plan for four hours, because that is what Spring Day took.",
+          consequence: "You start at 15:00 and finish at 18:30, with time left for your essay. Tumi: \"Who are you and what have you done with my co-lead?\"" },
+        { type: "overcorrection", text: "Ask to move the presentation to next week so there is no rush.",
+          consequence: "The Friday slot goes to the chess club. The cupcake sale gets no announcement at all." }
+      ],
+      audit: {
+        shortcut: "Tumi reminded you Spring Day took four times longer than planned. You planned for the best case anyway.",
+        overcorrection: "Dodging the deadline avoided the risk, but it also lost the slot. Planning for the real time was the fix.",
+        checked: "You planned from how long the last one actually took, not how long you hoped this one would take."
+      }
+    },
+    {
+      id: "fri", label: "Friday", short: "F", stamp: "10:48", status: "First break is over.", bias: "sunkcost",
+      feedIf: [
+        { flag: "thuShortcut", prepend: [
+          { from: "govender", channel: "chat", direct: true, text: "Your essay came in at 07:58 with two paragraphs missing. Please see me." },
+          { from: "tumi",     channel: "chat", text: "You look wrecked." }
+        ] }
+      ],
+      feed: [
+        { from: "tumi",   channel: "chat", text: "Sale update: 14 of 120 cupcakes sold at first break (R12 each). The tuck shop is doing two-for-one doughnuts today." },
+        { from: "karabo", channel: "chat", text: "We spent R600 on these!! We HAVE to sell them all. Skip lunch, whole of second break at the table." },
+        { from: "pillay", channel: "chat", direct: true, text: "Staff room is doing Mr Botha's retirement tea at 14:00 and has no catering yet. Just saying." }
+      ],
+      question: "Second break starts in ten minutes. What is the plan?",
+      options: [
+        { type: "overcorrection", text: "Cut the losses. Pack up now and give the rest away free.",
+          consequence: "The cupcakes vanish in four minutes, which is fun. The sale raises R168 against R600 spent." },
+        { type: "shortcut",       text: "Push harder. We spent R600, so we stay at the table all of second break and skip lunch.",
+          consequence: "You sell 21 more. Everyone is hungry and short-tempered, 85 cupcakes go home in boxes, and the sale ends R180 down." },
+        { type: "checked",        text: "Forget the R600 for a moment. Where would someone actually want these today?",
+          consequence: "You offer them to the staff room for Mr Botha's tea. Mr Pillay buys 90 at R10 each. The sale ends R468 up." }
+      ],
+      audit: {
+        shortcut: "The R600 was spent whatever you did next. Staying at the table to win it back cost you lunch and left you R180 down.",
+        overcorrection: "Walking away fast felt decisive, but you missed a better option sitting in the feed.",
+        checked: "You set the R600 aside and asked what the best move was from here."
+      }
+    }
+  ],
+
+  twist: {
+    stamp: "Friday, 15:10",
+    shared: { from: "daniels", channel: "chat", direct: true, text: "Art corridor camera footage came through. Two Grade 10s ripped both boards at 13:10. Sizwe had nothing to do with it." },
+    leadIn: {
+      shortcut: [
+        { from: "karabo", channel: "chat", text: "So... not Sizwe then." },
+        { from: "tumi",   channel: "chat", text: "Grade 9s are still calling us the police. Do we say something?" }
+      ],
+      overcorrection: [
+        { from: "tumi", channel: "chat", text: "They ripped it again this morning, same two. And the group has been saying Sizwe all week. Do we say something?" }
+      ],
+      checked: [
+        { from: "tumi", channel: "chat", text: "You were right to wait. But Karabo told half the grade it was Sizwe. Do we say something?" }
+      ]
+    },
+    question: "What do you post in the portfolio group?",
+    options: [
+      { text: "Say nothing. It will blow over by Monday.", summary: "say nothing",
+        result: "It does not. Sizwe hears about the camera footage from someone else, and so does everyone who blamed him." },
+      { text: "\"Glad that is sorted! Onwards.\"", summary: "post \"Glad that is sorted!\" and move on",
+        result: "Two people react with a thumbs up. Nobody mentions Sizwe, and nobody tells him either." },
+      { text: "\"We got this wrong. It was not Sizwe. We are telling him ourselves today.\"", summary: "correct it in the group and tell Sizwe yourselves",
+        result: "Karabo goes quiet. Tumi replies: \"Respect.\" At the end of the day, Sizwe nods at you in the passage." }
+    ]
+  },
+
+  copy: {
+    startTitle: "Five Days",
+    startLine: "You are the new Grade 11 portfolio lead. Make each call the way you really would.",
+    startSmall: "One school week. Five calls. Tumi is your co-lead.",
+    startButton: "Start Monday",
+    nextDay: "Next day",
+    toTwist: "Keep going",
+    toAudit: "See your audit",
+    skipHint: "Tap to skip ahead",
+    auditHeader: "Your week, audited.",
+    auditSummary: "You checked {n} of 5 calls.",
+    chips: { checked: "CHECKED", shortcut: "SHORTCUT", overcorrection: "OVERCORRECTED" },
+    twistLine: "Friday afternoon: you chose to {choice}. Hold on to that for the next part of the lesson.",
+    resultTitle: "Your shortcut to watch",
+    resultMany: "More than one shortcut fired. Which one feels most like you?",
+    resultOver: "No shortcuts, but you overcorrected. Being so careful that you stop checking is its own trap.",
+    resultClean: "A clean week. Real weeks are messier.",
+    resultPickAll: "Which one are you most likely to fall for in real life?",
+    resultCarry: "Take this to the next slide. You will build a tripwire for it.",
+    close: "That was one week. Next week will bring five more.",
+    replay: "Replay the week"
+  }
+};
+
+</script>
+<script>
+/* Five Days: The Bias Audit. Engine.
+   Reads window.WEEK (week.config.js). No storage, no network. */
+(function () {
+  "use strict";
+  var W = window.WEEK;
+  var app = document.getElementById("app");
+  var strip = document.getElementById("strip");
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var state;
+  var skipping = false;
+
+  function reset() {
+    state = { day: 0, choices: [], flags: {}, twist: null, watch: null };
+  }
+
+  /* ---------- helpers ---------- */
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function fill(tpl, key, val) { return tpl.replace("{" + key + "}", val); }
+  function wait(ms) {
+    if (reduce || skipping) return Promise.resolve();
+    return new Promise(function (res) {
+      var t = setTimeout(done, ms);
+      function done() { clearTimeout(t); document.removeEventListener("fd-skip", done); res(); }
+      document.addEventListener("fd-skip", done);
+    });
+  }
+  function skip() { skipping = true; document.dispatchEvent(new Event("fd-skip")); }
+  function settle(node) {
+    if (!node) return;
+    try { node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" }); } catch (e) { node.scrollIntoView(false); }
+  }
+  function clear() { app.innerHTML = ""; window.scrollTo(0, 0); }
+
+  /* ---------- week strip ---------- */
+  function drawStrip(current, auditMode) {
+    strip.innerHTML = "";
+    W.days.forEach(function (d, i) {
+      var p = el("span", "pip", d.short);
+      p.title = d.label;
+      if (auditMode || i < current) p.classList.add("done");
+      if (!auditMode && i === current) { p.classList.add("now"); p.setAttribute("aria-current", "step"); }
+      strip.appendChild(p);
+    });
+    var lab = el("span", "strip-label", auditMode ? "Audit" : (current >= 0 && current < W.days.length ? W.days[current].label : ""));
+    strip.appendChild(lab);
+  }
+
+  /* ---------- messages ---------- */
+  function avatar(who) {
+    var a = el("span", "av t" + (who.tone || 0), who.initials || "");
+    a.setAttribute("aria-hidden", "true");
+    return a;
+  }
+  function msg(m) {
+    var who = W.cast[m.from] || { name: m.from, initials: "?", tone: 0 };
+    var row = el("div", "msg ch-" + m.channel);
+    if (m.channel === "calendar") {
+      var pill = el("div", "cal");
+      pill.appendChild(el("span", "cal-tag", "Reminder"));
+      pill.appendChild(el("span", "cal-text", m.text));
+      row.appendChild(pill);
+      return row;
+    }
+    row.appendChild(avatar(who));
+    var body = el("div", "mbody");
+    var meta = el("div", "mmeta");
+    meta.appendChild(el("span", "mname", who.name));
+    var where = { chat: m.direct ? "Direct message" : "Portfolio group", forward: "Portfolio group", video: "Portfolio group", email: "Email", voice: "Voice note" }[m.channel] || "";
+    meta.appendChild(el("span", "mwhere", where));
+    body.appendChild(meta);
+
+    var bub = el("div", "bubble");
+    if (m.channel === "forward") {
+      bub.appendChild(el("div", "fwd", m.label || "Forwarded"));
+      bub.appendChild(el("div", "quote", m.text));
+    } else if (m.channel === "email") {
+      bub.appendChild(el("div", "subj", m.subject || ""));
+      bub.appendChild(el("div", null, m.text));
+    } else if (m.channel === "voice") {
+      var vn = el("div", "voice");
+      vn.setAttribute("aria-hidden", "true");
+      vn.appendChild(el("span", "play"));
+      var wave = el("span", "wave");
+      for (var i = 0; i < 22; i++) { var b = el("i"); b.style.height = (4 + ((i * 7) % 13)) + "px"; wave.appendChild(b); }
+      vn.appendChild(wave);
+      vn.appendChild(el("span", "dur", m.duration || ""));
+      bub.appendChild(vn);
+      bub.appendChild(el("div", "transcript-label", "Transcript"));
+      bub.appendChild(el("div", "transcript", m.text));
+    } else if (m.channel === "video") {
+      var v = el("div", "vid");
+      v.setAttribute("role", "img");
+      v.setAttribute("aria-label", "A shared video of a bus crash");
+      v.appendChild(el("span", "vplay"));
+      v.appendChild(el("span", "vlabel", "Video"));
+      bub.appendChild(v);
+      bub.appendChild(el("div", null, m.text));
+    } else {
+      bub.textContent = m.text;
+    }
+    body.appendChild(bub);
+    row.appendChild(body);
+    return row;
+  }
+  function typing() {
+    var t = el("div", "typing");
+    t.setAttribute("aria-hidden", "true");
+    t.appendChild(el("i")); t.appendChild(el("i")); t.appendChild(el("i"));
+    return t;
+  }
+  function revealAll(list, feed) {
+    var chain = Promise.resolve();
+    list.forEach(function (m, i) {
+      chain = chain.then(function () {
+        if (reduce || skipping) { feed.appendChild(msg(m)); return; }
+        var t = typing();
+        feed.appendChild(t); settle(t);
+        return wait(i === 0 ? 500 : 900).then(function () {
+          t.remove();
+          var n = msg(m);
+          feed.appendChild(n); settle(n);
+          return wait(250);
+        });
+      });
+    });
+    return chain;
+  }
+
+  /* ---------- screens ---------- */
+  function start() {
+    reset();
+    clear();
+    drawStrip(-1, false);
+    var s = el("section", "start");
+    s.appendChild(el("p", "eyebrow", W.meta.role));
+    s.appendChild(el("h1", "start-title", W.copy.startTitle));
+    s.appendChild(el("p", "start-line", W.copy.startLine));
+    s.appendChild(el("p", "start-small", W.copy.startSmall));
+    var b = el("button", "btn primary", W.copy.startButton);
+    b.id = "start-btn";
+    b.onclick = function () { playDay(0); };
+    s.appendChild(b);
+    app.appendChild(s);
+  }
+
+  function dayCard(title, stamp, status) {
+    var c = el("div", "daycard");
+    var h = el("h2", "day-title", title);
+    c.appendChild(h);
+    c.appendChild(el("span", "day-stamp", stamp));
+    if (status) c.appendChild(el("p", "day-status", status));
+    return c;
+  }
+
+  function optionButtons(opts, onPick) {
+    var wrap = el("div", "opts");
+    wrap.setAttribute("role", "group");
+    opts.forEach(function (o, i) {
+      var b = el("button", "opt", o.text);
+      b.id = "opt-" + i;
+      b.onclick = function () {
+        Array.prototype.forEach.call(wrap.children, function (x) { if (x !== b) x.hidden = true; x.disabled = true; });
+        b.classList.add("chosen");
+        b.setAttribute("aria-pressed", "true");
+        onPick(o, i);
+      };
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  function playDay(i) {
+    state.day = i;
+    skipping = false;
+    clear();
+    drawStrip(i, false);
+    var d = W.days[i];
+    var sec = el("section", "day");
+    sec.appendChild(dayCard(d.label, d.stamp, d.status));
+    var feed = el("div", "feed");
+    feed.setAttribute("aria-live", "polite");
+    sec.appendChild(feed);
+    var hint = el("button", "skip", W.copy.skipHint);
+    hint.onclick = skip;
+    sec.appendChild(hint);
+    app.appendChild(sec);
+
+    var list = [];
+    (d.feedIf || []).forEach(function (f) { if (state.flags[f.flag]) list = list.concat(f.prepend); });
+    list = list.concat(d.feed);
+
+    revealAll(list, feed).then(function () {
+      hint.remove();
+      var call = el("div", "call");
+      call.appendChild(el("p", "call-label", "Your call"));
+      call.appendChild(el("h3", "question", d.question));
+      call.appendChild(optionButtons(d.options, function (o) {
+        state.choices[i] = { type: o.type, text: o.text };
+        if (o.setFlag) state.flags[o.setFlag] = true;
+        var c = el("div", "consequence");
+        c.appendChild(el("p", null, o.consequence));
+        call.appendChild(c);
+        var last = i === W.days.length - 1;
+        var nb = el("button", "btn primary", last ? W.copy.toTwist : W.copy.nextDay);
+        nb.onclick = function () { if (last) twist(); else playDay(i + 1); };
+        call.appendChild(nb);
+        settle(nb);
+        nb.focus({ preventScroll: true });
+      }));
+      sec.appendChild(call);
+      settle(call);
+    });
+  }
+
+  function twist() {
+    var T = W.twist;
+    skipping = false;
+    clear();
+    drawStrip(4, false);
+    var sec = el("section", "day");
+    sec.appendChild(dayCard("Friday afternoon", T.stamp, "One more message."));
+    var feed = el("div", "feed");
+    feed.setAttribute("aria-live", "polite");
+    sec.appendChild(feed);
+    var hint = el("button", "skip", W.copy.skipHint);
+    hint.onclick = skip;
+    sec.appendChild(hint);
+    app.appendChild(sec);
+    var wed = state.choices[2] ? state.choices[2].type : "checked";
+    var list = [T.shared].concat(T.leadIn[wed] || []);
+    revealAll(list, feed).then(function () {
+      hint.remove();
+      var call = el("div", "call");
+      call.appendChild(el("p", "call-label", "Your call"));
+      call.appendChild(el("h3", "question", T.question));
+      call.appendChild(optionButtons(T.options, function (o) {
+        state.twist = o;
+        var c = el("div", "consequence");
+        c.appendChild(el("p", null, o.result));
+        call.appendChild(c);
+        var nb = el("button", "btn primary", W.copy.toAudit);
+        nb.onclick = audit;
+        call.appendChild(nb);
+        settle(nb);
+        nb.focus({ preventScroll: true });
+      }));
+      sec.appendChild(call);
+      settle(call);
+    });
+  }
+
+  function audit() {
+    clear();
+    drawStrip(5, true);
+    var page = el("section", "report");
+    page.appendChild(el("p", "eyebrow", "Five Days"));
+    page.appendChild(el("h1", "report-title", W.copy.auditHeader));
+    var n = state.choices.filter(function (c) { return c && c.type === "checked"; }).length;
+    page.appendChild(el("p", "report-sum", fill(W.copy.auditSummary, "n", n)));
+    var rows = el("ol", "rows");
+    page.appendChild(rows);
+    app.appendChild(page);
+
+    var chain = Promise.resolve();
+    W.days.forEach(function (d, i) {
+      chain = chain.then(function () {
+        var ch = state.choices[i];
+        var b = W.biases[d.bias];
+        var li = el("li", "row");
+        var head = el("div", "row-head");
+        head.appendChild(el("span", "row-day", d.label));
+        head.appendChild(el("span", "row-bias", b.name));
+        var chip = el("span", "chip c-" + ch.type, W.copy.chips[ch.type]);
+        head.appendChild(chip);
+        li.appendChild(head);
+        li.appendChild(el("p", "row-quote", "You chose: “" + ch.text + "”"));
+        li.appendChild(el("p", "row-why", d.audit[ch.type]));
+        var c = el("p", "row-catch");
+        c.appendChild(el("span", "catch-label", "Catch it"));
+        c.appendChild(document.createTextNode(b.catch));
+        li.appendChild(c);
+        rows.appendChild(li);
+        return wait(400);
+      });
+    });
+    chain.then(function () {
+      if (state.twist) page.appendChild(el("p", "twist-line", fill(W.copy.twistLine, "choice", state.twist.summary)));
+      result(page);
+    });
+  }
+
+  function result(page) {
+    var box = el("div", "result");
+    page.appendChild(box);
+    var fired = [];
+    W.days.forEach(function (d, i) { if (state.choices[i].type === "shortcut") fired.push(d.bias); });
+    var over = state.choices.some(function (c) { return c.type === "overcorrection"; });
+
+    function showCard(key) {
+      state.watch = key;
+      box.innerHTML = "";
+      var b = W.biases[key];
+      box.appendChild(el("p", "result-label", W.copy.resultTitle));
+      box.appendChild(el("p", "result-name", b.name));
+      box.appendChild(el("p", "result-line", b.line));
+      var c = el("p", "result-catch");
+      c.appendChild(el("span", "catch-label", "Catch it"));
+      c.appendChild(document.createTextNode(b.catch));
+      box.appendChild(c);
+      box.appendChild(el("p", "result-carry", W.copy.resultCarry));
+      closing(page);
+      try {
+        var checked = state.choices.filter(function (x) { return x.type === "checked"; }).length;
+        window.parent.postMessage({ type: "fivedays:complete", checked: checked, watch: key }, "*");
+      } catch (e) {}
+    }
+    function pick(prompt, keys, lead) {
+      if (lead) box.appendChild(el("p", "result-lead", lead));
+      box.appendChild(el("p", "result-prompt", prompt));
+      var g = el("div", "pick");
+      keys.forEach(function (k) {
+        var b = el("button", "pickbtn", W.biases[k].name);
+        b.onclick = function () { showCard(k); };
+        g.appendChild(b);
+      });
+      box.appendChild(g);
+      settle(g);
+    }
+    var all = Object.keys(W.biases);
+    if (fired.length === 1) showCard(fired[0]);
+    else if (fired.length > 1) pick(W.copy.resultMany, fired);
+    else pick(W.copy.resultPickAll, all, over ? W.copy.resultOver : W.copy.resultClean);
+  }
+
+  function closing(page) {
+    var old = page.querySelector(".closing");
+    if (old) old.remove();
+    var c = el("div", "closing");
+    c.appendChild(el("p", null, W.copy.close));
+    var r = el("button", "btn ghost", W.copy.replay);
+    r.onclick = start;
+    c.appendChild(r);
+    page.appendChild(c);
+    settle(c);
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === " " || e.key === "Enter") && e.target === document.body) { e.preventDefault(); skip(); }
+  });
+  app.addEventListener("click", function (e) {
+    if (e.target.closest && !e.target.closest("button") && e.target.closest(".feed")) skip();
+  });
+
+  start();
+})();
+
+</script>
+</body>
+</html>
